@@ -2,9 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
-// import 'package:provider/provider.dart';          // restore when Firebase wired
-// import '../../providers/auth_provider.dart';       // restore when Firebase wired
+import '../../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -31,19 +31,22 @@ class _SplashScreenState extends State<SplashScreen>
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack));
 
     _ctrl.forward();
-
     Timer(const Duration(milliseconds: 2000), _navigate);
   }
 
   void _navigate() {
     if (!mounted) return;
-    // TODO: swap back to auth check once Firebase is wired
-    // final auth = context.read<AuthProvider>();
-    // if (auth.isLoggedIn && auth.verificationStatus == VerificationStatus.approved)
-    //   context.go('/home');
-    // else
-    //   context.go('/onboarding');
-    context.go('/home');
+    final auth = context.read<AuthProvider>();
+
+    if (!auth.isLoggedIn) {
+      context.go('/onboarding');
+    } else if (auth.verificationStatus == VerificationStatus.pending) {
+      context.go('/register/pending', extra: auth.referenceNumber);
+    } else if (auth.subscriptionStatus != SubscriptionStatus.active) {
+      context.go('/profile/subscription');
+    } else {
+      context.go('/home');
+    }
   }
 
   @override
@@ -91,7 +94,6 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                 ),
                 const SizedBox(height: 22),
-                // Wordmark: bold "Easy" + light "Stock"
                 RichText(
                   text: TextSpan(
                     children: [
@@ -115,7 +117,6 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Tagline matching brand: "PAINT & PLY DISTRIBUTION"
                 Text(
                   'PAINT & PLY DISTRIBUTION',
                   style: GoogleFonts.inter(
@@ -126,7 +127,6 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                 ),
                 const SizedBox(height: 48),
-                // Loading dots
                 const _DotIndicator(),
               ],
             ),

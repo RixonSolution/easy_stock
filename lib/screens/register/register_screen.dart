@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/registration_provider.dart';
 import 'steps/step_0_details.dart';
 import 'steps/step_1_photo.dart';
@@ -89,9 +90,11 @@ class _RegisterBody extends StatelessWidget {
                 ),
                 Step3Review(
                   onSubmit: () async {
+                    final auth = context.read<AuthProvider>();
                     final ref =
                         await context.read<RegistrationProvider>().submit();
                     if (context.mounted) {
+                      auth.setRegistered(ref);
                       context.go('/register/pending', extra: ref);
                     }
                   },
