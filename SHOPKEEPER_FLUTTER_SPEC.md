@@ -5,6 +5,14 @@
 
 ---
 
+## Changelog
+
+| Date | What changed |
+|---|---|
+| Jun 2026 | User lifecycle gate fully implemented — `AuthProvider` made stateful, splash routing wired, pending screen auto-approves after 5 s, bottom nav gating added |
+
+---
+
 ## Project overview
 
 **Stack:** Flutter 3.9.x · Dart SDK ^3.9.2 · UI-only (no Firebase — all mock/static data)  
@@ -103,9 +111,7 @@ Use this everywhere instead of calling `FilePicker.platform.pickFiles` directly.
 
 ---
 
-## 3. User lifecycle & access gates ⏳ (PENDING IMPLEMENTATION)
-
-This is the most important unbuilt feature. Every screen's enabled/disabled state depends on where the user is in this lifecycle:
+## 3. User lifecycle & access gates ✅ (IMPLEMENTED)
 
 ```
 [Register] → pending approval → [Admin approves] → buy subscription → [Full access]
@@ -121,62 +127,75 @@ This is the most important unbuilt feature. Every screen's enabled/disabled stat
 | **Active subscriber** | `approved` | `active` | Everything unlocked |
 | **Subscription expired** | `approved` | `expired` | Profile + Subscription renewal only |
 
-### 3.2 Pending approval screen — `screens/register/register_pending_screen.dart` ✅ (built, needs gate wiring)
+### 3.2 AuthProvider — `providers/auth_provider.dart` ✅
 
-Already built as a post-registration landing page. Needs to also serve as the permanent home screen while `verificationStatus == 'pending'`:
+Stateful `ChangeNotifier` driving the entire lifecycle:
 
-- Clock icon in green circle, "Application Under Review" heading
-- Reference number pill (`#SK-XXXX` format)
-- What-happens-next checklist (3 steps)
-- Contact Support button (opens `/profile/support`)
-- **All bottom nav tabs except Profile are hidden or disabled**
-
-### 3.3 Feature gates to implement ⏳
-
-Add an `AuthProvider` (or simple `AppState` notifier) with:
 ```dart
-String verificationStatus;   // 'pending' | 'approved'
-String subscriptionStatus;   // 'none' | 'active' | 'expired'
+enum VerificationStatus { none, pending, approved, rejected }
+enum SubscriptionStatus { none, active, expiring, expired }
 
-bool get canBrowseStock    => verificationStatus == 'approved' && subscriptionStatus == 'active';
-bool get canPlaceOrders    => canBrowseStock;
-bool get canViewOrders     => verificationStatus == 'approved';
-bool get canAddDistributor => canBrowseStock;
-bool get canViewProfile    => true; // always
+bool get canAccess       => verificationStatus == approved && subscriptionStatus == active;
+bool get isPending       => verificationStatus == pending;
+bool get isApprovedNoSub => verificationStatus == approved && subscriptionStatus != active;
+
+void setRegistered(String ref)         // called on registration submit
+void simulateAdminApproval()           // demo helper — fires automatically after 5 s
+void simulateSubscriptionActivated()   // demo helper — fires automatically after 7 s
 ```
 
-**Splash screen routing logic** (update `screens/splash/splash_screen.dart`):
+### 3.3 Pending approval screen — `screens/register/register_pending_screen.dart` ✅
+
+Persistent home while `verificationStatus == pending`. Key behaviours:
+
+- **5-second auto-approve timer** starts as soon as the screen is mounted
+- Shows "Reviewing your application •••" animated dot indicator during the wait
+- After 5 s: `simulateAdminApproval()` fires → screen animates to "Account Approved!" via `AnimatedSwitcher`
+- After 2 more seconds: `simulateSubscriptionActivated()` + `context.go('/home')`
+- Contact Support button always visible
+- `AppBottomNav(currentIndex: -1)` shown — Profile tab is the only unlocked tab while pending
+
+> **Backend wiring:** remove the two `Timer` calls and drive state from real Firestore/FCM updates. All gate logic stays identical.
+
+### 3.4 Splash routing — `screens/splash/splash_screen.dart` ✅
+
 ```dart
-// After 1.5s delay:
-if (!isLoggedIn)           → /onboarding
-if (status == 'pending')   → /register/pending
-if (subStatus != 'active') → /profile/subscription  (with "buy a plan to continue" banner)
-else                       → /home
+// After 2 s:
+if (!auth.isLoggedIn)                          → /onboarding
+if (auth.verificationStatus == pending)        → /register/pending  (passes referenceNumber)
+if (auth.subscriptionStatus != active)         → /profile/subscription
+else                                           → /home
 ```
 
-**Bottom nav gate:**
-When `verificationStatus == 'pending'`, show all nav items but tap on Orders/Stock/Distributors shows a bottom sheet:
-> "Your account is under review. You'll get full access once approved."
+### 3.5 Bottom nav gate — `widgets/app_bottom_nav.dart` ✅
 
-When `verificationStatus == 'approved'` but `subscriptionStatus != 'active'`, same sheet but message:
-> "Subscribe to a plan to unlock this feature."
+- Reads `AuthProvider` via `context.watch`
+- When `!auth.canAccess`: tabs 0 (Home), 1 (Orders), 2 (Distributors) are dimmed + show a small lock badge
+- Tapping a locked tab opens `_LockedSheet` bottom sheet:
+  - Pending state → "Account Under Review" + Contact Support CTA
+  - Approved/no-sub state → "Subscription Required" + "Choose a Plan" CTA (routes to `/profile/subscription`)
+- Profile tab (index 3) is always unlocked
 
-**In-screen gates** — on any gated screen reached via deep link:
-```dart
-// At top of build()
-if (!context.read<AppState>().canBrowseStock) {
-  return const _AccessLockedView();
-}
+### 3.6 Subscription screen — `screens/profile/subscription_screen.dart` ✅
+
+- Listens to `AuthProvider` via `addListener` — when `subscriptionStatus` flips to `active`, auto-navigates to `/home`
+- **Approval banner**: shown when `verificationStatus == approved && subscriptionStatus != active`
+- **No Active Plan card**: shown instead of the gradient "Active Plan" banner when `_selected == null`
+- Plan card buttons say **"Get Started"** (not "Upgrade/Downgrade") when no plan is active
+- Billing history section hidden when no plan is active
+- Payment-pending banner includes **"Demo: Admin Confirms Payment"** tile → calls `simulateSubscriptionActivated()`
+
+### 3.7 Subscription → unlock flow ✅
+
 ```
-
-### 3.4 Subscription → unlock flow ⏳
-
-After admin approves registration:
-1. User lands on `/profile/subscription` with banner: "Your account is approved! Subscribe to start."
-2. User picks a plan → `/subscription/payment` (already built ✅)
-3. User pays via EasyPaisa/JazzCash/Bank, sends WhatsApp proof
-4. Admin confirms → `subscriptionStatus` flips to `active`
-5. App detects change → shows success state, all features unlock
+User approved → /profile/subscription (shows "Account Approved!" banner)
+→ taps plan card → /subscription/payment (account numbers + copy buttons)
+→ pays via EasyPaisa/JazzCash/Bank, takes screenshot
+→ taps WhatsApp card → sends screenshot to EasyStock Billing
+→ taps "I've Paid" → subscription screen shows orange "Payment Pending" banner
+→ Admin confirms → subscriptionStatus flips to 'active'
+→ app auto-navigates to /home — full access unlocked
+```
 
 ---
 
@@ -185,10 +204,10 @@ After admin approves registration:
 ### 4.1 Auth & onboarding
 | Screen | File | Status |
 |---|---|---|
-| Splash | `screens/splash/splash_screen.dart` | ✅ Built — needs lifecycle routing update |
+| Splash | `screens/splash/splash_screen.dart` | ✅ Built — lifecycle routing wired |
 | Onboarding | `screens/onboarding/onboarding_screen.dart` | ✅ Built |
-| Registration (4 steps) | `screens/register/register_screen.dart` | ✅ Built |
-| Register pending | `screens/register/register_pending_screen.dart` | ✅ Built — needs to be permanent home while pending |
+| Registration (4 steps) | `screens/register/register_screen.dart` | ✅ Built — calls `auth.setRegistered()` on submit |
+| Register pending | `screens/register/register_pending_screen.dart` | ✅ Built — persistent home, 5 s auto-approve timer |
 
 ### 4.2 Core app screens
 | Screen | File | Status |
@@ -215,7 +234,7 @@ After admin approves registration:
 | Shop Details | `screens/profile/shop_details_screen.dart` | ✅ Built |
 | Personal Info | `screens/profile/personal_info_screen.dart` | ✅ Built |
 | Change Password | `screens/profile/change_password_screen.dart` | ✅ Built — live strength indicator |
-| Subscription & Plans | `screens/profile/subscription_screen.dart` | ✅ Built — pending state after payment |
+| Subscription & Plans | `screens/profile/subscription_screen.dart` | ✅ Built — approval banner, no-plan state, auto-navigates home on activation |
 | Subscription Payment | `screens/profile/subscription_payment_screen.dart` | ✅ Built — WhatsApp proof flow |
 | Language | `screens/profile/language_screen.dart` | ✅ Built |
 | Help & FAQ | `screens/profile/faq_screen.dart` | ✅ Built — searchable, grouped, expandable |
@@ -270,22 +289,28 @@ Edit Profile → tap avatar → _SourceSheet bottom sheet (Gallery / Camera tile
 
 ---
 
-## 6. What's left to build ⏳
+## 6. What's left to build
 
-### Priority 1 — Registration/subscription access gate
-This is the core business logic missing from the app:
+### Priority 1 — Backend wiring (when ready)
+Replace the two demo timers in `register_pending_screen.dart` with real push/Firestore listeners:
 
-1. **`AppState` provider** — `verificationStatus` + `subscriptionStatus` strings, computed gate booleans
-2. **Splash routing** — route based on lifecycle state (pending → pending screen; approved+no sub → subscription; approved+active → home)
-3. **Bottom nav gating** — tapping locked tabs shows explanation sheet instead of navigating
-4. **`_AccessLockedView` widget** — shown inside gated screens reached via deep link; navy illustration + message + CTA button
-5. **Pending screen as persistent home** — while `verificationStatus == 'pending'`, pending screen IS the home; bottom nav shows only Profile
+```dart
+// Remove these lines from _RegisterPendingScreenState.initState():
+_approvalTimer = Timer(const Duration(seconds: 5), _onAutoApprove);
 
-### Priority 2 — Minor polish
+// Replace with a Firestore/FCM listener that calls:
+auth.simulateAdminApproval();           // rename to setApproved()
+auth.simulateSubscriptionActivated();   // rename to setSubscriptionActive()
+```
+
+Subscription payment confirmation also needs a real Firestore listener in `subscription_screen.dart` (`_onAuthChanged` is already wired — just need the backend to flip the flag).
+
+### Priority 2 — Minor polish ⏳
 - Pull-to-refresh on Order History and Distributor list
 - Loading skeleton on Home stat cards
 - Push notification toggle (currently a static Switch) — wire to local notification settings
 - Deep link handling for order status updates
+- `_AccessLockedView` widget for gated screens reached via deep link (currently handled by splash routing)
 
 ---
 
