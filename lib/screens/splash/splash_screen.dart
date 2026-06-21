@@ -38,6 +38,22 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
     final auth = context.read<AuthProvider>();
 
+    if (!auth.isReady) {
+      // Prefs still loading — wait for the next notification then re-try
+      void listener() {
+        if (!auth.isReady) return;
+        auth.removeListener(listener);
+        _doNavigate(auth);
+      }
+      auth.addListener(listener);
+      return;
+    }
+
+    _doNavigate(auth);
+  }
+
+  void _doNavigate(AuthProvider auth) {
+    if (!mounted) return;
     if (!auth.isLoggedIn) {
       context.go('/onboarding');
     } else if (auth.verificationStatus == VerificationStatus.pending) {
