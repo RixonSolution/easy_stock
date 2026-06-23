@@ -14,7 +14,16 @@ class Step1Photo extends StatefulWidget {
 }
 
 class _Step1PhotoState extends State<Step1Photo> {
-  bool _picking = false;
+  bool _picking  = false;
+  bool _showError = false;
+
+  void _continue(RegistrationProvider reg) {
+    if (reg.shopPhoto == null) {
+      setState(() => _showError = true);
+      return;
+    }
+    widget.onNext();
+  }
 
   Future<void> _pick() async {
     if (_picking) return;
@@ -31,8 +40,13 @@ class _Step1PhotoState extends State<Step1Photo> {
 
   @override
   Widget build(BuildContext context) {
-    final reg = context.watch<RegistrationProvider>();
+    final reg   = context.watch<RegistrationProvider>();
     final photo = reg.shopPhoto;
+    // Clear error once photo is picked
+    if (photo != null && _showError) {
+      WidgetsBinding.instance.addPostFrameCallback(
+          (_) => setState(() => _showError = false));
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
@@ -49,7 +63,7 @@ class _Step1PhotoState extends State<Step1Photo> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Add a photo of your shop front so distributors recognise you.',
+            'Add a photo of your shop front so distributors recognise you. This is required.',
             style: GoogleFonts.inter(fontSize: 13, color: textSecondary),
           ),
           const SizedBox(height: 28),
@@ -64,8 +78,12 @@ class _Step1PhotoState extends State<Step1Photo> {
                 color: bgColor,
                 borderRadius: BorderRadius.circular(cardRadius),
                 border: Border.all(
-                  color: photo != null ? accentOrange : borderColor,
-                  width: photo != null ? 2 : 1,
+                  color: _showError
+                      ? dangerText
+                      : photo != null
+                          ? accentOrange
+                          : borderColor,
+                  width: (photo != null || _showError) ? 2 : 1,
                 ),
                 image: photo != null
                     ? DecorationImage(
@@ -154,28 +172,28 @@ class _Step1PhotoState extends State<Step1Photo> {
             ),
           ],
 
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: photo != null ? widget.onNext : null,
-            style: ElevatedButton.styleFrom(
-              disabledBackgroundColor: borderColor,
-              disabledForegroundColor: textMuted,
+          // Error message
+          if (_showError) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    size: 15, color: dangerText),
+                const SizedBox(width: 6),
+                Text(
+                  'Please add a shop photo to continue',
+                  style: GoogleFonts.inter(fontSize: 12, color: dangerText),
+                ),
+              ],
             ),
-            child: const Text('Continue'),
-          ),
-          const SizedBox(height: 10),
+          ],
+
+          const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
-            child: TextButton(
-              onPressed: widget.onNext,
-              child: Text(
-                'Skip for now',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+            child: ElevatedButton(
+              onPressed: () => _continue(reg),
+              child: const Text('Continue'),
             ),
           ),
         ],

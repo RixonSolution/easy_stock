@@ -48,11 +48,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      context.go('/register');
+      context.go('/login');
     }
   }
 
-  void _skip() => context.go('/register');
+  void _skip() => context.go('/login');
 
   @override
   void dispose() {
@@ -121,6 +121,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: ElevatedButton(
                 onPressed: _next,
                 child: Text(isLast ? 'Get Started' : 'Next'),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Sign in link
+            GestureDetector(
+              onTap: () => context.go('/login'),
+              child: RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Already have an account? ',
+                      style: GoogleFonts.inter(
+                          fontSize: 13, color: textSecondary),
+                    ),
+                    TextSpan(
+                      text: 'Sign In',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: accentOrange,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
 

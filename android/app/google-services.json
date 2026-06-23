@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "711201331008",
+    "project_id": "easy-stock-151a2",
+    "storage_bucket": "easy-stock-151a2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:711201331008:android:c30ce9c2cbed0acbad8ca5",
+        "android_client_info": {
+          "package_name": "com.rixon_solution.easy_stock"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5DilKAjKZQ1-f9yM5-tSYQuvYd8ax9bM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

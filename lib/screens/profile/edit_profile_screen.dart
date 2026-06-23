@@ -211,6 +211,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         icon: Icons.email_outlined,
                         hint: 'you@example.com',
                         keyboardType: TextInputType.emailAddress,
+                        readOnly: true,
+                        validator: emailValidator,
                       ),
                       ProfileField(
                         ctrl: _cityCtrl,

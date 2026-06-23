@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,33 +18,40 @@ class RegisterPendingScreen extends StatefulWidget {
 }
 
 class _RegisterPendingScreenState extends State<RegisterPendingScreen> {
-  Timer? _approvalTimer;
-  Timer? _activationTimer;
+  StreamSubscription<DocumentSnapshot>? _sub;
+  Timer? _navTimer;
 
   @override
   void initState() {
     super.initState();
-    // After 5 s: auto-approve the account (simulates admin action)
-    _approvalTimer = Timer(const Duration(seconds: 5), _onAutoApprove);
+    _listenForApproval();
   }
 
-  void _onAutoApprove() {
-    if (!mounted) return;
-    context.read<AuthProvider>().simulateAdminApproval();
-    // After 2 more seconds: activate subscription and go to home
-    _activationTimer = Timer(const Duration(seconds: 2), _onAutoActivate);
-  }
+  void _listenForApproval() {
+    final uid = fb_auth.FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
 
-  void _onAutoActivate() {
-    if (!mounted) return;
-    context.read<AuthProvider>().simulateSubscriptionActivated();
-    context.go('/home');
+    _sub = FirebaseFirestore.instance
+        .collection('retailers')
+        .doc(uid)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      final status = snap.data()?['verificationStatus'] as String?;
+      if (status == 'approved') {
+        // Refresh AuthProvider then navigate after a short delay (show success UI)
+        context.read<AuthProvider>().refreshProfile();
+        _navTimer = Timer(const Duration(seconds: 2), () {
+          if (mounted) context.go('/profile/subscription');
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    _approvalTimer?.cancel();
-    _activationTimer?.cancel();
+    _sub?.cancel();
+    _navTimer?.cancel();
     super.dispose();
   }
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
+import '../../providers/auth_provider.dart';
 import 'profile_widgets.dart';
 
 class ShopDetailsScreen extends StatefulWidget {
@@ -14,51 +16,75 @@ class ShopDetailsScreen extends StatefulWidget {
 class _ShopDetailsScreenState extends State<ShopDetailsScreen> {
   final _form = GlobalKey<FormState>();
 
-  final _shopNameCtrl = TextEditingController(text: 'Al-Kareem Paint Store');
-  final _ntnCtrl      = TextEditingController(text: '1234567-8');
-  final _addressCtrl  = TextEditingController(text: '45-B, Main Boulevard, Gulberg III');
-  final _cityCtrl     = TextEditingController(text: 'Lahore');
-  final _provinceCtrl = TextEditingController(text: 'Punjab');
+  late final TextEditingController _shopNameCtrl;
+  late final TextEditingController _phoneCtrl;
+  late final TextEditingController _emailCtrl;
+  late final TextEditingController _addressCtrl;
+  late final TextEditingController _cityCtrl;
 
-  String _shopType = 'Paint Store';
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthProvider>();
+    final rawPhone = auth.phone.startsWith('+92')
+        ? auth.phone.substring(3)
+        : auth.phone;
+    _shopNameCtrl = TextEditingController(text: auth.shopName);
+    _phoneCtrl    = TextEditingController(text: rawPhone);
+    _emailCtrl    = TextEditingController(text: auth.email);
+    _addressCtrl  = TextEditingController(text: auth.address);
+    _cityCtrl     = TextEditingController(text: auth.city);
+  }
+
   bool _saving = false;
-
-  static const _shopTypes = [
-    'Paint Store',
-    'Ply Store',
-    'Hardware Store',
-    'General Trade',
-  ];
 
   @override
   void dispose() {
-    for (final c in [
-      _shopNameCtrl, _ntnCtrl, _addressCtrl, _cityCtrl, _provinceCtrl
-    ]) {
-      c.dispose();
-    }
+    _shopNameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _emailCtrl.dispose();
+    _addressCtrl.dispose();
+    _cityCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
     setState(() => _saving = true);
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [
-        const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-        const SizedBox(width: 10),
-        Text('Shop details saved!', style: GoogleFonts.inter(fontSize: 13)),
-      ]),
-      backgroundColor: successText,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(buttonRadius)),
-      duration: const Duration(seconds: 3),
-    ));
-    context.pop();
+    try {
+      await context.read<AuthProvider>().updateShopDetails(
+        shopName: _shopNameCtrl.text.trim(),
+        phone:    '+92${_phoneCtrl.text.trim()}',
+        address:  _addressCtrl.text.trim(),
+        city:     _cityCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Row(children: [
+          const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+          const SizedBox(width: 10),
+          Text('Shop details saved!', style: GoogleFonts.inter(fontSize: 13)),
+        ]),
+        backgroundColor: successText,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(buttonRadius)),
+        duration: const Duration(seconds: 3),
+      ));
+      context.pop();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed to save. Please try again.',
+            style: GoogleFonts.inter(fontSize: 13)),
+        backgroundColor: dangerText,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(buttonRadius)),
+      ));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -81,31 +107,33 @@ class _ShopDetailsScreenState extends State<ShopDetailsScreen> {
                         ctrl: _shopNameCtrl,
                         label: 'Shop Name',
                         icon: Icons.storefront_rounded,
-                        hint: 'Your shop name',
-                        validator: requiredValidator,
+                        hint: 'e.g. Al-Noor Paint Store',
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Shop name is required';
+                          }
+                          if (v.trim().length < 2) {
+                            return 'Must be at least 2 characters';
+                          }
+                          return null;
+                        },
                       ),
-                      // Shop type dropdown
-                      _DropdownRow(
-                        label: 'Shop Type',
-                        icon: Icons.category_outlined,
-                        value: _shopType,
-                        items: _shopTypes,
-                        onChanged: (v) =>
-                            setState(() => _shopType = v ?? _shopType),
-                      ),
+                      ProfilePhoneField(controller: _phoneCtrl),
                       ProfileField(
-                        ctrl: _ntnCtrl,
-                        label: 'NTN / Registration No.',
-                        icon: Icons.badge_outlined,
-                        hint: '1234567-8',
-                        keyboardType: TextInputType.number,
+                        ctrl: _emailCtrl,
+                        label: 'Email Address',
+                        icon: Icons.mail_outline_rounded,
+                        hint: 'yourshop@email.com',
+                        keyboardType: TextInputType.emailAddress,
+                        readOnly: true,
+                        validator: emailValidator,
                       ),
                       ProfileField(
                         ctrl: _addressCtrl,
                         label: 'Shop Address',
                         icon: Icons.location_on_outlined,
-                        hint: 'Street, Area',
-                        validator: requiredValidator,
+                        hint: 'e.g. Shop #12, Anarkali Bazar',
+                        validator: addressValidator,
                       ),
                       ProfileField(
                         ctrl: _cityCtrl,
@@ -113,12 +141,6 @@ class _ShopDetailsScreenState extends State<ShopDetailsScreen> {
                         icon: Icons.location_city_outlined,
                         hint: 'e.g. Lahore',
                         validator: requiredValidator,
-                      ),
-                      ProfileField(
-                        ctrl: _provinceCtrl,
-                        label: 'Province',
-                        icon: Icons.map_outlined,
-                        hint: 'e.g. Punjab',
                         last: true,
                       ),
                     ]),
@@ -163,71 +185,6 @@ class _ShopDetailsScreenState extends State<ShopDetailsScreen> {
         ],
       ),
       bottomNavigationBar: ProfileSaveBar(saving: _saving, onSave: _save),
-    );
-  }
-}
-
-// ── Inline dropdown row ───────────────────────────────────────────────────────
-class _DropdownRow extends StatelessWidget {
-  const _DropdownRow({
-    required this.label,
-    required this.icon,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-  final String label, value;
-  final IconData icon;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-          child: Text(label,
-              style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: textSecondary)),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-          child: DropdownButtonFormField<String>(
-            value: value,
-            onChanged: onChanged,
-            style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
-            decoration: InputDecoration(
-              prefixIcon: Icon(icon, size: 18, color: textSecondary),
-              filled: true,
-              fillColor: bgColor,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(buttonRadius),
-                borderSide: const BorderSide(color: borderColor),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(buttonRadius),
-                borderSide: const BorderSide(color: borderColor),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(buttonRadius),
-                borderSide:
-                    const BorderSide(color: primaryNavy, width: 1.5),
-              ),
-            ),
-            items: items
-                .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                .toList(),
-          ),
-        ),
-        const Divider(
-            height: 1, indent: 16, endIndent: 16, color: borderColor),
-      ],
     );
   }
 }

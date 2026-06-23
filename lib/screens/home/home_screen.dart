@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/distributor_avatar.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/status_pill.dart';
 import '../distributors/distributor_detail_screen.dart';
-
-// ── Mock data ──────────────────────────────────────────────────────────────
-const _shopName  = 'Al-Kareem Paint Store';
-const _ownerName = 'Ammar';
 
 const _distributors = [
   _DistData('Pak Paints',     'Lahore',    Color(0xFF185FA5), Color(0xFFEEF2F8), 'PP', 'Dulux · ICI · Jotun',    'approved'),
@@ -36,12 +34,16 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final shopName  = auth.shopName.isEmpty  ? 'My Shop'         : auth.shopName;
+    final ownerName = auth.ownerName.isEmpty ? 'there'           : auth.ownerName.split(' ').first;
+
     return Scaffold(
       backgroundColor: bgColor,
       body: Column(
         children: [
           // ── Navy header ──────────────────────────────────────────────────
-          _NavyHeader(greeting: _greeting(), shopName: _shopName),
+          _NavyHeader(greeting: _greeting(), shopName: shopName, ownerName: ownerName),
 
           // ── Scrollable body ──────────────────────────────────────────────
           Expanded(
@@ -134,9 +136,10 @@ class HomeScreen extends StatelessWidget {
 
 // ── Navy header ─────────────────────────────────────────────────────────────
 class _NavyHeader extends StatelessWidget {
-  const _NavyHeader({required this.greeting, required this.shopName});
+  const _NavyHeader({required this.greeting, required this.shopName, required this.ownerName});
   final String greeting;
   final String shopName;
+  final String ownerName;
 
   // Unread count — kept as a const here; will update from provider when Firebase wired
   static const _unreadCount = 2;
@@ -163,7 +166,7 @@ class _NavyHeader extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$greeting, $_ownerName 👋',
+                          '$greeting, $ownerName 👋',
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             color: Colors.white60,

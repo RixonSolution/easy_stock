@@ -126,6 +126,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     if (paid == true && mounted) {
       setState(() => _pendingId = plan.id);
+      await _auth.activateSubscription(plan.id);
     }
   }
 
@@ -311,37 +312,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               ),
                             ),
                           ]),
-                          const SizedBox(height: 12),
-                          // Demo simulation
-                          GestureDetector(
-                            onTap: () => _auth.simulateSubscriptionActivated(),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: surfaceWhite,
-                                borderRadius:
-                                    BorderRadius.circular(buttonRadius),
-                                border: Border.all(
-                                    color: warningText.withValues(alpha: 0.3)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.play_circle_rounded,
-                                      size: 14, color: warningText),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Demo: Admin Confirms Payment',
-                                    style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: warningText),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),

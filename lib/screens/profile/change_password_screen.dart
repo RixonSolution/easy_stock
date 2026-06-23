@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
+import '../../providers/auth_provider.dart';
 import 'profile_widgets.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -18,10 +20,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _newCtrl     = TextEditingController();
   final _confirmCtrl = TextEditingController();
 
-  bool _showCurrent = false;
-  bool _showNew     = false;
-  bool _showConfirm = false;
-  bool _saving      = false;
+  bool    _showCurrent = false;
+  bool    _showNew     = false;
+  bool    _showConfirm = false;
+  bool    _saving      = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -56,11 +59,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   }
 
   Future<void> _save() async {
+    setState(() => _error = null);
     if (!_form.currentState!.validate()) return;
     setState(() => _saving = true);
-    await Future.delayed(const Duration(milliseconds: 900));
+    final err = await context.read<AuthProvider>().changePassword(
+      currentPassword: _currentCtrl.text,
+      newPassword:     _newCtrl.text,
+    );
     if (!mounted) return;
     setState(() => _saving = false);
+    if (err != null) {
+      setState(() => _error = err);
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(children: [
         const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
@@ -108,9 +119,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             show: _showCurrent,
                             onToggle: () => setState(
                                 () => _showCurrent = !_showCurrent),
-                            validator: (v) => (v == null || v.isEmpty)
-                                ? 'Required'
-                                : null,
+                            validator: (v) {
+                              if (v == null || v.isEmpty) {
+                                return 'Current password is required';
+                              }
+                              if (v.length < 6) {
+                                return 'Password must be at least 6 characters';
+                              }
+                              return null;
+                            },
                           ),
                           const Divider(
                               height: 1,
@@ -125,9 +142,23 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 setState(() => _showNew = !_showNew),
                             onChanged: (_) => setState(() {}),
                             validator: (v) {
-                              if (v == null || v.isEmpty) return 'Required';
+                              if (v == null || v.isEmpty) {
+                                return 'New password is required';
+                              }
                               if (v.length < 8) {
-                                return 'Minimum 8 characters';
+                                return 'Password must be at least 8 characters';
+                              }
+                              if (!RegExp(r'[A-Z]').hasMatch(v)) {
+                                return 'Include at least one uppercase letter (A–Z)';
+                              }
+                              if (!RegExp(r'[0-9]').hasMatch(v)) {
+                                return 'Include at least one number (0–9)';
+                              }
+                              if (!RegExp(r'[!@#\$&*~%^()_+=\-]').hasMatch(v)) {
+                                return 'Include at least one special character (!@#\$)';
+                              }
+                              if (v == _currentCtrl.text) {
+                                return 'New password must be different from current password';
                               }
                               return null;
                             },
@@ -145,7 +176,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 () => _showConfirm = !_showConfirm),
                             last: true,
                             validator: (v) {
-                              if (v == null || v.isEmpty) return 'Required';
+                              if (v == null || v.isEmpty) {
+                                return 'Please confirm your new password';
+                              }
                               if (v != _newCtrl.text) {
                                 return 'Passwords do not match';
                               }
@@ -238,10 +271,37 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: ProfileSaveBar(
-        saving: _saving,
-        onSave: _save,
-        label: 'Change Password',
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: dangerBg,
+                  borderRadius: BorderRadius.circular(buttonRadius),
+                  border: Border.all(color: dangerText.withValues(alpha: 0.3)),
+                ),
+                child: Row(children: [
+                  const Icon(Icons.error_outline_rounded,
+                      color: dangerText, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(_error!,
+                        style: GoogleFonts.inter(
+                            fontSize: 13, color: dangerText)),
+                  ),
+                ]),
+              ),
+            ),
+          ProfileSaveBar(
+            saving: _saving,
+            onSave: _save,
+            label: 'Change Password',
+          ),
+        ],
       ),
     );
   }

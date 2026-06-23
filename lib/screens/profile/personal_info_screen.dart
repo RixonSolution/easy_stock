@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
+import '../../providers/auth_provider.dart';
 import 'profile_widgets.dart';
 
 class PersonalInfoScreen extends StatefulWidget {
@@ -14,19 +16,27 @@ class PersonalInfoScreen extends StatefulWidget {
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   final _form = GlobalKey<FormState>();
 
-  final _fullNameCtrl = TextEditingController(text: 'Ammar Shabbir');
-  final _cnicCtrl     = TextEditingController(text: '35202-1234567-1');
-  final _phoneCtrl    = TextEditingController(text: '+92 300 1234567');
-  final _emailCtrl    = TextEditingController(text: 'ammar@alkareem.pk');
-  final _dobCtrl      = TextEditingController(text: '15 March 1995');
+  late final TextEditingController _ownerNameCtrl;
+  late final TextEditingController _phoneCtrl;
+  late final TextEditingController _emailCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthProvider>();
+    final rawPhone = auth.phone.startsWith('+92')
+        ? auth.phone.substring(3)
+        : auth.phone;
+    _ownerNameCtrl = TextEditingController(text: auth.ownerName);
+    _phoneCtrl     = TextEditingController(text: rawPhone);
+    _emailCtrl     = TextEditingController(text: auth.email);
+  }
 
   bool _saving = false;
 
   @override
   void dispose() {
-    for (final c in [
-      _fullNameCtrl, _cnicCtrl, _phoneCtrl, _emailCtrl, _dobCtrl
-    ]) {
+    for (final c in [_ownerNameCtrl, _phoneCtrl, _emailCtrl]) {
       c.dispose();
     }
     super.dispose();
@@ -35,23 +45,39 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
     setState(() => _saving = true);
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [
-        const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-        const SizedBox(width: 10),
-        Text('Personal info updated!',
+    try {
+      await context.read<AuthProvider>().updatePersonalInfo(
+        ownerName: _ownerNameCtrl.text.trim(),
+        phone:     '+92${_phoneCtrl.text.trim()}',
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Row(children: [
+          const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+          const SizedBox(width: 10),
+          Text('Personal info updated!',
+              style: GoogleFonts.inter(fontSize: 13)),
+        ]),
+        backgroundColor: successText,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(buttonRadius)),
+        duration: const Duration(seconds: 3),
+      ));
+      context.pop();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed to save. Please try again.',
             style: GoogleFonts.inter(fontSize: 13)),
-      ]),
-      backgroundColor: successText,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(buttonRadius)),
-      duration: const Duration(seconds: 3),
-    ));
-    context.pop();
+        backgroundColor: dangerText,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(buttonRadius)),
+      ));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -70,41 +96,22 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                   children: [
                     ProfileFormCard(children: [
                       ProfileField(
-                        ctrl: _fullNameCtrl,
-                        label: 'Full Name',
+                        ctrl: _ownerNameCtrl,
+                        label: 'Owner Name',
                         icon: Icons.person_outline_rounded,
-                        hint: 'Your legal full name',
-                        validator: requiredValidator,
+                        hint: 'e.g. Muhammad Ali',
+                        validator: nameValidator,
                       ),
-                      ProfileField(
-                        ctrl: _cnicCtrl,
-                        label: 'CNIC Number',
-                        icon: Icons.credit_card_outlined,
-                        hint: 'XXXXX-XXXXXXX-X',
-                        keyboardType: TextInputType.number,
-                        validator: requiredValidator,
-                      ),
-                      ProfileField(
-                        ctrl: _phoneCtrl,
-                        label: 'Phone Number',
-                        icon: Icons.phone_outlined,
-                        hint: '+92 3XX XXXXXXX',
-                        keyboardType: TextInputType.phone,
-                        validator: requiredValidator,
-                      ),
+                      ProfilePhoneField(controller: _phoneCtrl),
                       ProfileField(
                         ctrl: _emailCtrl,
                         label: 'Email Address',
-                        icon: Icons.email_outlined,
+                        icon: Icons.mail_outline_rounded,
                         hint: 'you@example.com',
                         keyboardType: TextInputType.emailAddress,
-                      ),
-                      ProfileField(
-                        ctrl: _dobCtrl,
-                        label: 'Date of Birth',
-                        icon: Icons.cake_outlined,
-                        hint: 'DD Month YYYY',
+                        readOnly: true,
                         last: true,
+                        validator: emailValidator,
                       ),
                     ]),
 

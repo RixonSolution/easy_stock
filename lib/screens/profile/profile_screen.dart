@@ -1,22 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/status_pill.dart';
-
-// ── Mock data ────────────────────────────────────────────────────────────────
-const _shopName   = 'Al-Kareem Paint Store';
-const _ownerName  = 'Ammar Shabbir';
-const _city       = 'Lahore, Pakistan';
-// const _phone = '+92 300 1234567';  // ready for Contact Info screen
-// const _email = 'ammar@alkareem.pk';
-const _initials   = 'AS';
-const _plan       = 'Pro Plan';
-const _renewal    = '15 Jul 2026';
-const _price      = 'Rs. 2,500 / month';
-const _subStatus  = 'active';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -37,7 +27,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text(
           'Log Out',
           style: GoogleFonts.inter(
-              fontSize: 17, fontWeight: FontWeight.w700, color: textPrimary),
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: textPrimary),
         ),
         content: Text(
           'Are you sure you want to log out of your account?',
@@ -51,9 +43,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     fontWeight: FontWeight.w500, color: textSecondary)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              context.go('/onboarding');
+              await context.read<AuthProvider>().logout();
+              if (context.mounted) context.go('/onboarding');
             },
             child: Text('Log Out',
                 style: GoogleFonts.inter(
@@ -66,12 +59,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
       backgroundColor: bgColor,
       body: Column(
         children: [
           // ── Navy header ────────────────────────────────────────────────
-          _ProfileHeader(),
+          _ProfileHeader(
+            shopName:  auth.shopName.isEmpty  ? 'My Shop'       : auth.shopName,
+            ownerName: auth.ownerName.isEmpty ? 'Account Owner' : auth.ownerName,
+            city:      auth.city.isEmpty      ? ''              : auth.city,
+            initials:  auth.initials,
+          ),
 
           // ── Scrollable body ────────────────────────────────────────────
           Expanded(
@@ -80,7 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Compact stats row — tappable
+                  // Stats row
                   IntrinsicHeight(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -117,8 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             iconColor: successText,
                             iconBg: successBg,
                             compact: true,
-                            onTap: () =>
-                                context.push('/orders', extra: 3),
+                            onTap: () => context.push('/orders', extra: 3),
                           ),
                         ),
                       ],
@@ -127,15 +126,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Subscription card — tappable
+                  // Subscription card
                   GestureDetector(
                     onTap: () => context.push('/profile/subscription'),
-                    child: _SubscriptionCard(),
+                    child: _SubscriptionCard(
+                      status: auth.subscriptionStatus,
+                      planId: auth.subscriptionPlan,
+                    ),
                   ),
 
                   const SizedBox(height: 24),
 
-                  // ACCOUNT section
+                  // ACCOUNT
                   _SectionLabel('ACCOUNT'),
                   _SettingsCard(children: [
                     _SettingsTile(
@@ -158,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 16),
 
-                  // PREFERENCES section
+                  // PREFERENCES
                   _SectionLabel('PREFERENCES'),
                   _SettingsCard(children: [
                     _SwitchTile(
@@ -183,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 16),
 
-                  // SUPPORT section
+                  // SUPPORT
                   _SectionLabel('SUPPORT'),
                   _SettingsCard(children: [
                     _SettingsTile(
@@ -254,8 +256,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ── Navy profile header ───────────────────────────────────────────────────────
+// ── Profile header ────────────────────────────────────────────────────────────
 class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.shopName,
+    required this.ownerName,
+    required this.city,
+    required this.initials,
+  });
+
+  final String shopName, ownerName, city, initials;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -268,30 +279,15 @@ class _ProfileHeader extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'My Profile',
-                    style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => context.push('/profile/edit'),
-                    icon: const Icon(Icons.edit_outlined,
-                        color: Colors.white70, size: 20),
-                    style: IconButton.styleFrom(
-                      backgroundColor:
-                          Colors.white.withValues(alpha: 0.10),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ],
+              Text(
+                'My Profile',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 20),
               Row(
@@ -306,7 +302,7 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      _initials,
+                      initials,
                       style: GoogleFonts.inter(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
@@ -323,7 +319,7 @@ class _ProfileHeader extends StatelessWidget {
                           children: [
                             Flexible(
                               child: Text(
-                                _shopName,
+                                shopName,
                                 style: GoogleFonts.inter(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -334,7 +330,6 @@ class _ProfileHeader extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            // Verified badge
                             Container(
                               padding: const EdgeInsets.all(3),
                               decoration: const BoxDecoration(
@@ -348,23 +343,25 @@ class _ProfileHeader extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _ownerName,
+                          ownerName,
                           style: GoogleFonts.inter(
                               fontSize: 13, color: Colors.white60),
                         ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on_outlined,
-                                size: 12, color: Colors.white38),
-                            const SizedBox(width: 3),
-                            Text(
-                              _city,
-                              style: GoogleFonts.inter(
-                                  fontSize: 12, color: Colors.white38),
-                            ),
-                          ],
-                        ),
+                        if (city.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_outlined,
+                                  size: 12, color: Colors.white38),
+                              const SizedBox(width: 3),
+                              Text(
+                                '$city, Pakistan',
+                                style: GoogleFonts.inter(
+                                    fontSize: 12, color: Colors.white38),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -380,6 +377,31 @@ class _ProfileHeader extends StatelessWidget {
 
 // ── Subscription card ─────────────────────────────────────────────────────────
 class _SubscriptionCard extends StatelessWidget {
+  const _SubscriptionCard({
+    required this.status,
+    required this.planId,
+  });
+
+  final SubscriptionStatus status;
+  final String planId;
+
+  String get _planLabel {
+    switch (planId) {
+      case 'business': return 'Business Plan';
+      case 'basic':    return 'Basic Plan';
+      default:         return 'Pro Plan';
+    }
+  }
+
+  String get _statusStr {
+    switch (status) {
+      case SubscriptionStatus.active:   return 'active';
+      case SubscriptionStatus.expiring: return 'expiring';
+      case SubscriptionStatus.expired:  return 'expired';
+      default:                          return 'pending';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -401,7 +423,7 @@ class _SubscriptionCard extends StatelessWidget {
                   color: accentOrange, size: 20),
               const SizedBox(width: 8),
               Text(
-                _plan,
+                status == SubscriptionStatus.none ? 'No Active Plan' : _planLabel,
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -409,55 +431,24 @@ class _SubscriptionCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              const StatusPill(_subStatus),
+              StatusPill(_statusStr),
             ],
           ),
-          const SizedBox(height: 14),
-          Container(height: 1, color: Colors.white12),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _SubMeta(Icons.calendar_today_outlined, 'Renews', _renewal),
-              const SizedBox(width: 24),
-              _SubMeta(Icons.payments_outlined, 'Amount', _price),
-            ],
-          ),
+          if (status != SubscriptionStatus.none) ...[
+            const SizedBox(height: 14),
+            Container(height: 1, color: Colors.white12),
+            const SizedBox(height: 10),
+            Text(
+              'Tap to manage your subscription',
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.white38),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _SubMeta extends StatelessWidget {
-  const _SubMeta(this.icon, this.label, this.value);
-  final IconData icon;
-  final String label, value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: Colors.white38),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: GoogleFonts.inter(
-                    fontSize: 11, color: Colors.white38)),
-            Text(value,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                )),
-          ],
-        ),
-      ],
-    );
-  }
-}
 
 // ── Settings helpers ──────────────────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
@@ -540,7 +531,8 @@ class _SettingsTile extends StatelessWidget {
           minLeadingWidth: 0,
         ),
         if (!last)
-          const Divider(height: 1, indent: 64, endIndent: 0, color: borderColor),
+          const Divider(
+              height: 1, indent: 64, endIndent: 0, color: borderColor),
       ],
     );
   }

@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/registration_provider.dart';
 import 'steps/step_0_details.dart';
 import 'steps/step_1_photo.dart';
@@ -29,8 +28,15 @@ class RegisterScreen extends StatelessWidget {
   }
 }
 
-class _RegisterBody extends StatelessWidget {
+class _RegisterBody extends StatefulWidget {
   const _RegisterBody();
+
+  @override
+  State<_RegisterBody> createState() => _RegisterBodyState();
+}
+
+class _RegisterBodyState extends State<_RegisterBody> {
+  String? _submitError;
 
   @override
   Widget build(BuildContext context) {
@@ -90,14 +96,22 @@ class _RegisterBody extends StatelessWidget {
                 ),
                 Step3Review(
                   onSubmit: () async {
-                    final auth = context.read<AuthProvider>();
-                    final ref =
-                        await context.read<RegistrationProvider>().submit();
-                    if (context.mounted) {
-                      auth.setRegistered(ref);
-                      context.go('/register/pending', extra: ref);
+                    setState(() => _submitError = null);
+                    try {
+                      final ref =
+                          await context.read<RegistrationProvider>().submit();
+                      if (context.mounted) {
+                        context.go('/register/pending', extra: ref);
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        setState(() => _submitError = e
+                            .toString()
+                            .replaceFirst('Exception: ', ''));
+                      }
                     }
                   },
+                  submitError: _submitError,
                 ),
               ],
             ),

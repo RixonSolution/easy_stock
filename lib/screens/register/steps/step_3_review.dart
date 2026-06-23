@@ -5,8 +5,13 @@ import '../../../constants/theme.dart';
 import '../../../providers/registration_provider.dart';
 
 class Step3Review extends StatelessWidget {
-  const Step3Review({super.key, required this.onSubmit});
+  const Step3Review({
+    super.key,
+    required this.onSubmit,
+    this.submitError,
+  });
   final Future<void> Function() onSubmit;
+  final String? submitError;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +55,8 @@ class Step3Review extends StatelessWidget {
                 _DetailRow(label: 'Phone',      value: reg.phone),
                 if (reg.email.isNotEmpty)
                   _DetailRow(label: 'Email',    value: reg.email),
+                if (reg.address.isNotEmpty)
+                  _DetailRow(label: 'Address',  value: reg.address),
                 _DetailRow(label: 'City',       value: reg.city, last: true),
               ],
             ),
@@ -90,6 +97,31 @@ class Step3Review extends StatelessWidget {
                       'Upload all documents to enable submission.',
                       style: GoogleFonts.inter(
                           fontSize: 12, color: warningText, height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          if (submitError != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: dangerBg,
+                borderRadius: BorderRadius.circular(pillRadius),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded,
+                      color: dangerText, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      submitError!,
+                      style: GoogleFonts.inter(
+                          fontSize: 12, color: dangerText, height: 1.4),
                     ),
                   ),
                 ],
