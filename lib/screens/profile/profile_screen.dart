@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../constants/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/connections_provider.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/status_pill.dart';
@@ -59,7 +61,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
+    final auth        = context.watch<AuthProvider>();
+    final connections = context.watch<ConnectionsProvider>();
+    final loading     = connections.loading;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -81,48 +85,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Stats row
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: StatCard(
-                            icon: Icons.receipt_long_rounded,
-                            value: '21',
-                            label: 'Total Orders',
-                            iconColor: infoText,
-                            iconBg: infoBg,
-                            compact: true,
-                            onTap: () => context.push('/orders'),
+                  loading
+                      ? _ProfileStatsShimmer()
+                      : IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: StatCard(
+                                  icon: Icons.receipt_long_rounded,
+                                  value: '21',
+                                  label: 'Total Orders',
+                                  iconColor: infoText,
+                                  iconBg: infoBg,
+                                  compact: true,
+                                  onTap: () => context.push('/orders'),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: StatCard(
+                                  icon: Icons.store_rounded,
+                                  value: '${connections.approvedCount}',
+                                  label: 'Wholesalers',
+                                  iconColor: purpleText,
+                                  iconBg: purpleBg,
+                                  compact: true,
+                                  onTap: () => context.push('/distributors'),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: StatCard(
+                                  icon: Icons.check_circle_rounded,
+                                  value: '18',
+                                  label: 'Completed',
+                                  iconColor: successText,
+                                  iconBg: successBg,
+                                  compact: true,
+                                  onTap: () => context.push('/orders', extra: 3),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: StatCard(
-                            icon: Icons.store_rounded,
-                            value: '4',
-                            label: 'Distributors',
-                            iconColor: purpleText,
-                            iconBg: purpleBg,
-                            compact: true,
-                            onTap: () => context.push('/distributors'),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: StatCard(
-                            icon: Icons.check_circle_rounded,
-                            value: '18',
-                            label: 'Completed',
-                            iconColor: successText,
-                            iconBg: successBg,
-                            compact: true,
-                            onTap: () => context.push('/orders', extra: 3),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
 
                   const SizedBox(height: 20),
 
@@ -586,6 +592,32 @@ class _SwitchTile extends StatelessWidget {
         ),
         const Divider(height: 1, indent: 64, color: borderColor),
       ],
+    );
+  }
+}
+
+// ── Shimmer for profile stats row ─────────────────────────────────────────────
+class _ProfileStatsShimmer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFE8EDF3),
+      highlightColor: const Color(0xFFF4F6FA),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: List.generate(3, (i) => Expanded(
+            child: Container(
+              margin: EdgeInsets.only(left: i == 0 ? 0 : 10),
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          )),
+        ),
+      ),
     );
   }
 }

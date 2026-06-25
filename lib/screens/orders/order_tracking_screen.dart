@@ -28,16 +28,16 @@ class _StepDef {
 
 const _stepDefs = [
   _StepDef('Order Placed',
-      'Your order has been sent to the distributor',
+      'Your order has been sent to the wholesaler',
       Icons.receipt_long_rounded),
   _StepDef('Order Approved',
-      'Distributor confirmed your order via call/message',
+      'Wholesaler confirmed your order via call/message',
       Icons.check_circle_rounded),
   _StepDef('Payment Submitted',
-      'Payment proof shared with distributor via WhatsApp',
+      'Payment proof shared with wholesaler via WhatsApp',
       Icons.payments_rounded),
   _StepDef('Payment Confirmed',
-      'Distributor received and verified your payment',
+      'Wholesaler received and verified your payment',
       Icons.verified_rounded),
   _StepDef('Out for Delivery',
       'Stock is being dispatched to your shop',
@@ -391,7 +391,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _callDistributor,
                           icon: const Icon(Icons.phone_outlined, size: 18),
-                          label: const Text('Call Distributor'),
+                          label: const Text('Call Wholesaler'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: primaryNavy,
                             side: const BorderSide(color: borderColor),

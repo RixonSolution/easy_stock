@@ -25,7 +25,7 @@ class _SupportScreenState extends State<SupportScreen> {
   static const _subjects = [
     'Order Issue',
     'Payment Problem',
-    'Distributor Issue',
+    'Wholesaler Issue',
     'Account & Profile',
     'App Bug / Error',
     'Subscription',

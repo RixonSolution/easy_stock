@@ -87,11 +87,11 @@ class _SectionData {
 const _sections = [
   _SectionData(
     '1. Acceptance of Terms',
-    'By downloading, installing, or using the EasyStock mobile application ("App"), you agree to be bound by these Terms & Conditions. If you do not agree to any part of these terms, you may not use our App.\n\nThese terms apply to all users of the App, including retailers, distributors, and any other individuals who access the platform.',
+    'By downloading, installing, or using the EasyStock mobile application ("App"), you agree to be bound by these Terms & Conditions. If you do not agree to any part of these terms, you may not use our App.\n\nThese terms apply to all users of the App, including retailers, wholesalers, and any other individuals who access the platform.',
   ),
   _SectionData(
     '2. Description of Service',
-    'EasyStock is a business management platform designed for retailers to manage stock orders, connect with distributors, and track deliveries. The App facilitates communication between retailers and distributors but does not itself sell or deliver goods.\n\nWe reserve the right to modify, suspend, or discontinue any part of the service at any time without notice.',
+    'EasyStock is a business management platform designed for retailers to manage stock orders, connect with wholesalers, and track deliveries. The App facilitates communication between retailers and wholesalers but does not itself sell or deliver goods.\n\nWe reserve the right to modify, suspend, or discontinue any part of the service at any time without notice.',
   ),
   _SectionData(
     '3. User Accounts',
@@ -99,11 +99,11 @@ const _sections = [
   ),
   _SectionData(
     '4. Privacy Policy',
-    'We collect the following information to operate the App:\n• Personal details (name, CNIC, phone number, email)\n• Shop information (name, address, NTN number)\n• Order and transaction history\n• Device information and usage data\n\nYour data is encrypted and stored securely. We do not sell your personal information to third parties. Your data may be shared with distributors only to the extent necessary to fulfil your orders.',
+    'We collect the following information to operate the App:\n• Personal details (name, CNIC, phone number, email)\n• Shop information (name, address, NTN number)\n• Order and transaction history\n• Device information and usage data\n\nYour data is encrypted and stored securely. We do not sell your personal information to third parties. Your data may be shared with wholesalers only to the extent necessary to fulfil your orders.',
   ),
   _SectionData(
     '5. Payments & Transactions',
-    'EasyStock facilitates payment coordination between retailers and distributors. All payments are made directly between users via third-party services (EasyPaisa, JazzCash, bank transfer). EasyStock is not a payment processor and is not responsible for:\n• Failed or delayed transfers\n• Disputes between retailers and distributors\n• Errors in payment amounts\n\nAlways verify payment receipt confirmations before processing orders.',
+    'EasyStock facilitates payment coordination between retailers and wholesalers. All payments are made directly between users via third-party services (EasyPaisa, JazzCash, bank transfer). EasyStock is not a payment processor and is not responsible for:\n• Failed or delayed transfers\n• Disputes between retailers and wholesalers\n• Errors in payment amounts\n\nAlways verify payment receipt confirmations before processing orders.',
   ),
   _SectionData(
     '6. Prohibited Activities',

@@ -42,14 +42,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     const _Notif(
       id: 'n2', type: _NotifType.payment,
       title: 'Payment Confirmed',
-      body: 'Payment of Rs. 12,400 for ORD-2401 has been received by distributor.',
+      body: 'Payment of Rs. 12,400 for ORD-2401 has been received by wholesaler.',
       time: '1 hour ago',
       route: '/orders/ORD-2401/tracking',
     ),
     const _Notif(
       id: 'n3', type: _NotifType.distributor,
       title: 'New Connection',
-      body: 'ColorMax Distributors accepted your connection request.',
+      body: 'ColorMax Wholesalers accepted your connection request.',
       time: '3 hours ago',
       route: '/distributors',
       read: true,

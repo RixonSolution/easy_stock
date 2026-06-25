@@ -2,19 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../constants/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/connections_provider.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/distributor_avatar.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/status_pill.dart';
 import '../distributors/distributor_detail_screen.dart';
 
-const _distributors = [
-  _DistData('Pak Paints',     'Lahore',    Color(0xFF185FA5), Color(0xFFEEF2F8), 'PP', 'Dulux · ICI · Jotun',    'approved'),
-  _DistData('Royal Colors',   'Karachi',   Color(0xFF6C5CE7), Color(0xFFF0EEFF), 'RC', 'Berger · Nippon',        'approved'),
-  _DistData('Master Ply',     'Faisalabad',Color(0xFF1A8A5A), Color(0xFFEAF8F2), 'MP', 'Century · Green Ply',    'approved'),
-  _DistData('National Dist.', 'Multan',    Color(0xFFD97706), Color(0xFFFFF8ED), 'ND', 'ICI · Berger',           'requested'),
+// Color palette matching the connections screen
+const _fgColors = [
+  Color(0xFF185FA5), Color(0xFF6C5CE7), Color(0xFF1A8A5A),
+  Color(0xFFD97706), Color(0xFFD94A3A), Color(0xFF1B2B4B),
+];
+const _bgColors = [
+  Color(0xFFEEF2F8), Color(0xFFF0EEFF), Color(0xFFEAF8F2),
+  Color(0xFFFFF8ED), Color(0xFFFEF0EF), Color(0xFFE8EDF3),
 ];
 
 const _recentOrders = [
@@ -22,8 +27,26 @@ const _recentOrders = [
   _OrderData('ORD-2398', 'Royal Colors', 'Rs. 8,750', 'requested', '4 days ago', 2),
 ];
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Start streaming connections for this retailer
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      final uid  = auth.uid;
+      if (uid.isNotEmpty) {
+        context.read<ConnectionsProvider>().listen(uid);
+      }
+    });
+  }
 
   String _greeting() {
     final h = DateTime.now().hour;
@@ -34,9 +57,12 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final shopName  = auth.shopName.isEmpty  ? 'My Shop'         : auth.shopName;
-    final ownerName = auth.ownerName.isEmpty ? 'there'           : auth.ownerName.split(' ').first;
+    final auth        = context.watch<AuthProvider>();
+    final connections = context.watch<ConnectionsProvider>();
+    final shopName    = auth.shopName.isEmpty  ? 'My Shop' : auth.shopName;
+    final ownerName   = auth.ownerName.isEmpty ? 'there'   : auth.ownerName.split(' ').first;
+    final approved    = connections.approvedConnections;
+    final loading     = connections.loading;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -52,65 +78,99 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Stats row — IntrinsicHeight ensures all cards are equal height
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: StatCard(
-                            icon: Icons.receipt_long_rounded,
-                            value: '3',
-                            label: 'Active Orders',
-                            iconColor: infoText,
-                            iconBg: infoBg,
-                            onTap: () => context.go('/orders', extra: 2),
+                  // Stats row
+                  loading
+                      ? _StatsShimmer()
+                      : IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: StatCard(
+                                  icon: Icons.receipt_long_rounded,
+                                  value: '3',
+                                  label: 'Active Orders',
+                                  iconColor: infoText,
+                                  iconBg: infoBg,
+                                  onTap: () => context.go('/orders', extra: 2),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: StatCard(
+                                  icon: Icons.store_rounded,
+                                  value: '${connections.approvedCount}',
+                                  label: 'Wholesalers',
+                                  iconColor: purpleText,
+                                  iconBg: purpleBg,
+                                  onTap: () => context.go('/distributors'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: StatCard(
+                                  icon: Icons.check_circle_rounded,
+                                  value: '18',
+                                  label: 'Completed',
+                                  iconColor: successText,
+                                  iconBg: successBg,
+                                  onTap: () => context.go('/orders', extra: 3),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: StatCard(
-                            icon: Icons.store_rounded,
-                            value: '4',
-                            label: 'Distributors',
-                            iconColor: purpleText,
-                            iconBg: purpleBg,
-                            onTap: () => context.go('/distributors'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: StatCard(
-                            icon: Icons.check_circle_rounded,
-                            value: '18',
-                            label: 'Completed',
-                            iconColor: successText,
-                            iconBg: successBg,
-                            onTap: () => context.go('/orders', extra: 3),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
 
                   const SizedBox(height: 28),
 
-                  // ── My Distributors ──────────────────────────────────────
+                  // ── My Wholesalers ────────────────────────────────────────
                   _SectionHeader(
-                    title: 'My Distributors',
+                    title: 'My Wholesalers',
                     actionLabel: 'See all',
                     onAction: () => context.go('/distributors'),
                   ),
                   const SizedBox(height: 14),
                   SizedBox(
                     height: 96,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        ..._distributors.map((d) => _DistributorTile(data: d)),
-                        _AddNewTile(onTap: () => context.go('/distributors')),
-                      ],
-                    ),
+                    child: loading
+                        ? _TilesShimmer()
+                        : ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              ...approved.asMap().entries.map((e) {
+                                final i    = e.key;
+                                final d    = e.value;
+                                final name = d['wholesalerName'] as String? ?? 'Wholesaler';
+                                final city = d['wholesalerCity'] as String? ?? '';
+                                final brands = d['wholesalerBrands'] as String? ?? '';
+                                final phone  = d['wholesalerPhone']  as String? ?? '';
+                                final addr   = d['wholesalerAddress'] as String? ?? '';
+                                final email  = d['wholesalerEmail']  as String? ?? '';
+                                final ci = ((d['wholesalerColorIndex'] as int?) ?? i) % _fgColors.length;
+
+                                final parts    = name.trim().split(RegExp(r'\s+'));
+                                final initials = parts.length >= 2
+                                    ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+                                    : (name.isNotEmpty
+                                        ? name.substring(0, name.length.clamp(0, 2)).toUpperCase()
+                                        : 'WS');
+
+                                return _DistributorTile(
+                                  name:      name,
+                                  city:      city,
+                                  brands:    brands,
+                                  phone:     phone,
+                                  address:   addr,
+                                  email:     email,
+                                  initials:  initials,
+                                  fg:        _fgColors[ci],
+                                  bg:        _bgColors[ci],
+                                  linkStatus: 'approved',
+                                );
+                              }),
+                              _AddNewTile(onTap: () => context.go('/distributors')),
+                            ],
+                          ),
                   ),
 
                   const SizedBox(height: 28),
@@ -258,7 +318,7 @@ class _NavyHeader extends StatelessWidget {
                           color: Colors.white54, size: 20),
                       const SizedBox(width: 10),
                       Text(
-                        'Search products, distributors...',
+                        'Search products, wholesalers...',
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: Colors.white38,
@@ -318,22 +378,37 @@ class _SectionHeader extends StatelessWidget {
 
 // ── Distributor tile ─────────────────────────────────────────────────────────
 class _DistributorTile extends StatelessWidget {
-  const _DistributorTile({required this.data});
-  final _DistData data;
+  const _DistributorTile({
+    required this.name,
+    required this.city,
+    required this.brands,
+    required this.phone,
+    required this.address,
+    required this.email,
+    required this.initials,
+    required this.fg,
+    required this.bg,
+    required this.linkStatus,
+  });
+  final String name, city, brands, phone, address, email, initials, linkStatus;
+  final Color fg, bg;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => context.push(
-        '/distributors/${Uri.encodeComponent(data.name)}',
+        '/distributors/${Uri.encodeComponent(name)}',
         extra: DistributorArg(
-          name: data.name,
-          city: data.city,
-          brands: data.brands,
-          initials: data.initials,
-          fg: data.fg,
-          bg: data.bg,
-          linkStatus: data.linkStatus,
+          name:       name,
+          city:       city,
+          brands:     brands,
+          initials:   initials,
+          fg:         fg,
+          bg:         bg,
+          linkStatus: linkStatus,
+          phone:      phone,
+          address:    address,
+          email:      email,
         ),
       ),
       child: Container(
@@ -342,15 +417,10 @@ class _DistributorTile extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DistributorAvatar(
-              initials: data.initials,
-              bg: data.bg,
-              fg: data.fg,
-              size: 52,
-            ),
+            DistributorAvatar(initials: initials, bg: bg, fg: fg, size: 52),
             const SizedBox(height: 6),
             Text(
-              data.name,
+              name,
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
@@ -523,12 +593,71 @@ class _Meta extends StatelessWidget {
   }
 }
 
-// ── Data models (mock) ────────────────────────────────────────────────────────
-class _DistData {
-  const _DistData(this.name, this.city, this.fg, this.bg, this.initials,
-      this.brands, this.linkStatus);
-  final String name, city, initials, brands, linkStatus;
-  final Color fg, bg;
+// ── Shimmer: stats row ────────────────────────────────────────────────────────
+class _StatsShimmer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFE8EDF3),
+      highlightColor: const Color(0xFFF4F6FA),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: List.generate(3, (i) => Expanded(
+            child: Container(
+              margin: EdgeInsets.only(left: i == 0 ? 0 : 12),
+              height: 88,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          )),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Shimmer: wholesaler tiles row ────────────────────────────────────────────
+class _TilesShimmer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFE8EDF3),
+      highlightColor: const Color(0xFFF4F6FA),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: 4,
+        itemBuilder: (_, i) => Container(
+          width: 72,
+          margin: const EdgeInsets.only(right: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                height: 10,
+                width: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _OrderData {

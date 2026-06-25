@@ -18,8 +18,6 @@ class DistributorDetailScreen extends StatefulWidget {
 class _DistributorDetailScreenState extends State<DistributorDetailScreen> {
   late String _linkStatus;
 
-  static const _contactPhone = '+92 300 9876543';
-  static const _contactCity  = 'Main Market, Lahore';
 
   @override
   void initState() {
@@ -37,7 +35,7 @@ class _DistributorDetailScreenState extends State<DistributorDetailScreen> {
       ),
       builder: (_) => _CallSheet(
         distributorName: dist.name,
-        phone: _contactPhone,
+        phone: dist.phone.isNotEmpty ? dist.phone : 'Not available',
       ),
     );
   }
@@ -109,7 +107,7 @@ class _DistributorDetailScreenState extends State<DistributorDetailScreen> {
                           onPressed: () => context.pop(),
                         ),
                         const Spacer(),
-                        StatusPill(_linkStatus),
+                        if (_linkStatus != 'none') StatusPill(_linkStatus),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -185,15 +183,36 @@ class _DistributorDetailScreenState extends State<DistributorDetailScreen> {
                         _InfoRow(
                           icon: Icons.phone_outlined,
                           label: 'Phone',
-                          value: _contactPhone,
+                          value: dist.phone.isNotEmpty
+                              ? dist.phone
+                              : 'Not available',
                         ),
-                        const Divider(height: 1, indent: 44, color: borderColor),
-                        _InfoRow(
-                          icon: Icons.location_on_outlined,
-                          label: 'Address',
-                          value: _contactCity,
-                          last: true,
-                        ),
+                        if (dist.city.isNotEmpty) ...[
+                          const Divider(height: 1, indent: 44, color: borderColor),
+                          _InfoRow(
+                            icon: Icons.location_on_outlined,
+                            label: 'City',
+                            value: dist.city,
+                          ),
+                        ],
+                        if (dist.address.isNotEmpty) ...[
+                          const Divider(height: 1, indent: 44, color: borderColor),
+                          _InfoRow(
+                            icon: Icons.store_outlined,
+                            label: 'Address',
+                            value: dist.address,
+                            last: true,
+                          ),
+                        ],
+                        if (dist.email.isNotEmpty) ...[
+                          const Divider(height: 1, indent: 44, color: borderColor),
+                          _InfoRow(
+                            icon: Icons.email_outlined,
+                            label: 'Email',
+                            value: dist.email,
+                            last: true,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -486,17 +505,25 @@ class _InfoRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: textSecondary),
           const SizedBox(width: 10),
           Text(label,
               style: GoogleFonts.inter(fontSize: 13, color: textSecondary)),
-          const Spacer(),
-          Text(value,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              value,
               style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: textPrimary)),
+                  color: textPrimary),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
         ],
       ),
     );
@@ -756,7 +783,11 @@ class DistributorArg {
     required this.fg,
     required this.bg,
     required this.linkStatus,
+    this.phone   = '',
+    this.address = '',
+    this.email   = '',
   });
   final String name, city, brands, initials, linkStatus;
+  final String phone, address, email;
   final Color fg, bg;
 }

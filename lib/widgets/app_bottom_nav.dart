@@ -15,7 +15,7 @@ class AppBottomNav extends StatelessWidget {
     (Icons.home_rounded, Icons.home_outlined, 'Home', '/home'),
     (Icons.receipt_long_rounded, Icons.receipt_long_outlined, 'Orders',
         '/orders'),
-    (Icons.store_rounded, Icons.store_outlined, 'Distributors', '/distributors'),
+    (Icons.store_rounded, Icons.store_outlined, 'Wholesalers', '/distributors'),
     (Icons.person_rounded, Icons.person_outlined, 'Profile', '/profile'),
   ];
 

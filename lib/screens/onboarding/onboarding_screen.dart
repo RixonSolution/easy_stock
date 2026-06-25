@@ -19,9 +19,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       icon: Icons.store_rounded,
       iconBg: Color(0xFFEEF2F8),
       iconColor: Color(0xFF185FA5),
-      title: 'Connect with Distributors',
+      title: 'Connect with Wholesalers',
       body:
-          'Discover and connect with trusted distributors in your area. Browse their full product catalogue anytime.',
+          'Discover and connect with trusted wholesalers in your area. Browse their full product catalogue anytime.',
     ),
     _SlideData(
       icon: Icons.inventory_2_rounded,
@@ -37,7 +37,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       iconColor: Color(0xFF1A8A5A),
       title: 'Grow Your Business',
       body:
-          'Stay on top of stock levels, order history and distributor relationships — all in one place.',
+          'Stay on top of stock levels, order history and wholesaler relationships — all in one place.',
     ),
   ];
 

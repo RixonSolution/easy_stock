@@ -92,7 +92,7 @@ class _Step0DetailsState extends State<Step0Details> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Tell us about your shop so distributors can find you.',
+              'Tell us about your shop so wholesalers can find you.',
               style: GoogleFonts.inter(fontSize: 13, color: textSecondary),
             ),
             const SizedBox(height: 28),

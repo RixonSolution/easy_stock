@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'constants/theme.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/connections_provider.dart';
+import 'providers/subscription_provider.dart';
 import 'router/app_router.dart';
 
 void main() async {
@@ -20,6 +22,14 @@ class EasyStockApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, SubscriptionProvider>(
+          create: (_) => SubscriptionProvider(),
+          update: (_, auth, sub) {
+            sub!.update(auth.uid, auth.verificationStatus.name);
+            return sub;
+          },
+        ),
+        ChangeNotifierProvider(create: (_) => ConnectionsProvider()),
       ],
       child: MaterialApp.router(
         title: 'EasyStock',

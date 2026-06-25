@@ -24,6 +24,7 @@ class AuthProvider extends ChangeNotifier {
   String _subscriptionPlan = '';
 
   bool get isLoggedIn        => _user != null;
+  String get uid             => _user?.uid ?? '';
   VerificationStatus get verificationStatus => _verificationStatus;
   SubscriptionStatus get subscriptionStatus => _subscriptionStatus;
   String get referenceNumber => _referenceNumber;

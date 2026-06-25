@@ -183,7 +183,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           style: GoogleFonts.inter(
                               fontSize: 14, color: textPrimary),
                           decoration: InputDecoration(
-                            hintText: 'Search orders, distributors, products...',
+                            hintText: 'Search orders, wholesalers, products...',
                             hintStyle: GoogleFonts.inter(
                                 fontSize: 13, color: textMuted),
                             prefixIcon: const Icon(Icons.search_rounded,
@@ -284,7 +284,7 @@ class _SearchScreenState extends State<SearchScreen> {
           const SizedBox(height: 8),
           _BrowseChip(
             icon: Icons.store_rounded,
-            label: 'Distributors',
+            label: 'Wholesalers',
             color: purpleText,
             bg: purpleBg,
             onTap: () => context.go('/distributors'),
@@ -338,7 +338,7 @@ class _SearchScreenState extends State<SearchScreen> {
           const SizedBox(height: 8),
         ],
         if (dists.isNotEmpty) ...[
-          _GroupLabel('Distributors', dists.length),
+          _GroupLabel('Wholesalers', dists.length),
           ...dists.map((r) => _ResultTile(item: r, query: _query, onTap: () => _onTap(r))),
           const SizedBox(height: 8),
         ],

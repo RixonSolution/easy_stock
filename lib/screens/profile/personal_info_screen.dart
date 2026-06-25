@@ -133,7 +133,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Your personal information is encrypted and only used for account verification. It is never shared with distributors.',
+                              'Your personal information is encrypted and only used for account verification. It is never shared with wholesalers.',
                               style: GoogleFonts.inter(
                                   fontSize: 12,
                                   color: infoText,

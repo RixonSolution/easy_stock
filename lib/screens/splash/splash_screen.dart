@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/subscription_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -39,26 +40,47 @@ class _SplashScreenState extends State<SplashScreen>
     final auth = context.read<AuthProvider>();
 
     if (!auth.isReady) {
-      // Prefs still loading — wait for the next notification then re-try
       void listener() {
         if (!auth.isReady) return;
         auth.removeListener(listener);
-        _doNavigate(auth);
+        _navigate();
       }
       auth.addListener(listener);
       return;
     }
 
-    _doNavigate(auth);
+    // Cases that don't need subscription data
+    if (!auth.isLoggedIn ||
+        auth.verificationStatus == VerificationStatus.pending ||
+        auth.verificationStatus == VerificationStatus.rejected) {
+      _doNavigate(auth, null);
+      return;
+    }
+
+    // Wait for subscription lifecycle to be computed
+    final sub = context.read<SubscriptionProvider>();
+    if (!sub.ready) {
+      void listener() {
+        if (!sub.ready) return;
+        sub.removeListener(listener);
+        _doNavigate(auth, sub);
+      }
+      sub.addListener(listener);
+      return;
+    }
+
+    _doNavigate(auth, sub);
   }
 
-  void _doNavigate(AuthProvider auth) {
+  void _doNavigate(AuthProvider auth, SubscriptionProvider? sub) {
     if (!mounted) return;
     if (!auth.isLoggedIn) {
       context.go('/onboarding');
     } else if (auth.verificationStatus == VerificationStatus.pending) {
       context.go('/register/pending', extra: auth.referenceNumber);
-    } else if (auth.subscriptionStatus != SubscriptionStatus.active) {
+    } else if (auth.verificationStatus == VerificationStatus.rejected) {
+      context.go('/register/pending', extra: auth.referenceNumber);
+    } else if (sub == null || !sub.canAccess) {
       context.go('/profile/subscription');
     } else {
       context.go('/home');

@@ -273,7 +273,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                         ...[
                           '1. Copy an account number below and transfer the amount',
                           '2. Take a screenshot of the payment confirmation',
-                          '3. Tap "Send Screenshot via WhatsApp" to open the distributor\'s chat',
+                          '3. Tap "Send Screenshot via WhatsApp" to open the wholesaler\'s chat',
                         ].map((s) => Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(s,
@@ -329,7 +329,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                         Expanded(
                           child: Text(
                             'Screenshot sent! Tap "I\'ve Sent It" below. '
-                            'The distributor will confirm and your order status will update.',
+                            'The wholesaler will confirm and your order status will update.',
                             style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: warningText,

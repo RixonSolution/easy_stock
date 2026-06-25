@@ -63,7 +63,7 @@ class _Step1PhotoState extends State<Step1Photo> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Add a photo of your shop front so distributors recognise you. This is required.',
+            'Add a photo of your shop front so wholesalers recognise you. This is required.',
             style: GoogleFonts.inter(fontSize: 13, color: textSecondary),
           ),
           const SizedBox(height: 28),
